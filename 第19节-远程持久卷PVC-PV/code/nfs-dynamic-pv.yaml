@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-pvc
+spec:
+  storageClassName: "nfs-client"           #指定的存储类名称 与 PV的storageClassName 名称一致才能匹配
+  resources:
+    requests:                       #资源所需申请 10Gi 存储空间
+      storage: 10Gi
+  accessModes:                      #PV的访问方式是多节点读写需求
+    - ReadWriteMany
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      volumes:
+        - name: html-data-volume        #定义volume数据卷
+          persistentVolumeClaim:        #volume的存储驱动是 PVC  持久卷方式
+            claimName: nfs-pvc          #PVC 持久卷申请的名称 nfs-pvc
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - mountPath: /usr/share/nginx/html    #容器目标路径
+              name: html-data-volume     #将volume数据卷挂载到目标路径
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-svc
+spec:
+  selector:
+    app: nginx
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30090
+  type: NodePort
