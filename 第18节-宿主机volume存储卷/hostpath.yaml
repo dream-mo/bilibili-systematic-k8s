@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: host-path-deploy
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          volumeMounts:
+            - mountPath: /usr/share/nginx/html
+              name: host-path-dir #引用数据卷, volume名称
+              readOnly: true   #只读挂载
+      volumes:  # 声明有哪些volume卷、volume的名称、volume的存储方式/存储介质/大小限制等等
+        - name: host-path-dir
+          hostPath:   # 存储介质是Pod所处Node宿主机
+            path: /k8s/data/  # 宿主机路径

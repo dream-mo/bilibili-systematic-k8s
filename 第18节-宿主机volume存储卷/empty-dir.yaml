@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: empty-dir-deploy
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      initContainers:
+        - name: busybox
+          imagePullPolicy: IfNotPresent
+          image: nginx:alpine
+          volumeMounts:
+            - mountPath: /usr/share/nginx/html   #挂载容器的目标路径
+              name: code-tmp-dir  #引用数据卷, volume名称
+          command:   #模拟git pull拉取代码
+            - "/bin/sh"
+            - "-c"
+            - "echo '<?php echo \"hello world\"; ' > /usr/share/nginx/html/index.php "
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          volumeMounts:
+            - mountPath: /usr/share/nginx/html
+              name: code-tmp-dir #引用数据卷, volume名称
+      volumes:  # 声明有哪些volume卷、volume的名称、volume的存储方式/存储介质/大小限制等等
+        - name: code-tmp-dir
+          emptyDir:   # 默认为磁盘存储介质
+            sizeLimit: 128Mi
+#          emptyDir:    # 内存存储介质
+#            medium: Memory  # tmpfs 内存临时文件系统
+#            sizeLimit: 512Mi
